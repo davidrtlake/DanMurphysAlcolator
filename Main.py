@@ -44,14 +44,12 @@ for link in links:
                 n.append("")
     for v in value:
         data[d][titles.index(rawTitles[c])] = v.text
-        if c == titles.index("Alcohol Volume") and v.text == "" or v.text == "0":
-            del data[d]
-            d -= 1
         c += 1
     if data[d][titles.index('Alcohol Volume')] == '' \
                or data[d][titles.index('Alcohol Volume')] == '0':
         del data[d]
         #del prices[d]
+        #testing github
         d -= 1
     d += 1
 
