@@ -41,7 +41,7 @@ c = 0
 d = 0
 for link in links:
     driver.get(str(link))
-    #driver.get("https://www.danmurphys.com.au/product/DM_904212/oyster-bay-sauvignon-blanc")
+    #driver.get("https://www.danmurphys.com.au/product/DM_519443/100-tequila-blood-orange-bitters-bottles-275ml")
     time.sleep(1)
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'lxml')
@@ -82,13 +82,12 @@ for link in links:
             tmpbPA = priceAmount
         elif ("in" in price and package == True) or package == False:
             tmpsP = actualPrice
-        if tmpbP > bestPrice:
+        if (tmpbP < bestPrice and tmpbP > 0.0) or bestPrice == 0.0:
             bestPrice = tmpbP
-        if tmpbPA > bestPriceAmt:
             bestPriceAmt = tmpbPA
-        if tmpsP > singlePrice:
+        if (tmpsP < singlePrice and tmpsP > 0.0) or singlePrice == 0.0:
             singlePrice = tmpsP
-        if singlePrice > bestPrice:
+        if singlePrice < bestPrice and singlePrice > 0.0 or bestPrice == 0.0:
             bestPrice = singlePrice
             bestPriceAmt = 1
     data[d][0] = "$" + str(bestPrice)
@@ -107,7 +106,6 @@ for link in links:
     if data[d][titles.index('Alcohol Volume')] == '' \
                or data[d][titles.index('Alcohol Volume')] == '0':
         del data[d]
-        #del prices[d]
         d -= 1
     d += 1
 
