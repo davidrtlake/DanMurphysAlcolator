@@ -45,9 +45,15 @@ allcats = cats[0]
 allcats = allcats.replace('(', ',').replace(')', ',').replace('Category', ',').replace('Show less\n', ',')
 cats = allcats.split(",")
 delCats = []
+IgnoreCategories = ["FoodSnacks","SoftDrinks","Water","NonAlcoholicDrinks","MineralSparklingWater",
+                    "Nuts","Chips","Juice","WineGlasses","BottleOpeners","PlasticCups",
+                    "Chocolate","CoolerBags","BeerGlasses","StillWater","NonAlcoholicWine",
+                    "WineRacks","Books","EnergyDrinks","NonAlcoholicBeer","Popcorn","PorkCrackling",
+                    "Stoppers","CoconutWater","WineFridges","Corkscrews","Pretzels","Cordial",
+                    "IceCubeTrayMoulds","Ice","Cherries"]
 cnt = 0
 for c in cats:
-    if c.replace(" ", "").isalpha() == False:
+    if c.replace(" ", "").isalpha() == False or c.replace(" ", "") in IgnoreCategories:
         delCats.append(cnt)
     if len(c) > 0 and c[-1] == " ":
         d = c[0:-1].replace(" ", "-")
@@ -61,12 +67,17 @@ for num in delCats:
 links = []
 titles = ["Best Price", "Per Amount", "Single Price", "Product Name", "Link", "Category"]
 rawTitles = []
+rawLinks = []
 priceTexts = []
 numberDict = {"one": 1.0, "two": 2.0, "three": 3.0, "four": 4.0, "five": 5.0,
                "six": 6.0, "seven": 7.0, "eight": 8.0, "nine": 9.0, "ten": 10.0}
-for cat in cats
+progress = 1
+for cat in cats:
+    print("Scanning category:", progress, "/", len(cats))
+    progress += 1
     driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=1&size=250&sort=Name")
-    pcount = 0
+    time.sleep(10)
+    pcount = 1
     pagecount = driver.find_elements_by_class_name("page-count")
     for pag in pagecount:
         page = pag.text
@@ -74,24 +85,31 @@ for cat in cats
         for p in pagecnt:
             if IsNumber(p):
                 pcount = int(p)
+    progress2 = 1
     for p in range(1, pcount+1):
-        driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=" + p + "&size=250&sort=Name")
-        time.sleep(7)
+        print("    Scanning page:", progress2, "/", pcount)
+        progress2 += 1
+        driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=" + str(p) + "&size=250&sort=Name")
+        time.sleep(10)
         block = driver.find_element_by_class_name("col-xs-12")
         URL = block.find_elements_by_tag_name("a[href*=product")
         for u in URL:
             v = u.get_attribute('href')
-            if v not in links:
+            if v not in rawLinks:
                 links.append([str(v), cat])
+                rawLinks.append(v)
+        print("        Number of URLS:", len(links))
 
 data = [["","","","","",""] for j in range(len(links))]
 
 c = 0
 d = 0
+progress = 1
 for link in links:
-    driver.get(link[1])
-    #driver.get("https://www.danmurphys.com.au/product/DM_519443/100-tequila-blood-orange-bitters-bottles-275ml")
-    time.sleep(2)
+    print("Scanning item:", progress, "/", len(links))
+    progress += 1
+    driver.get(link[0])
+    time.sleep(5)
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, 'lxml')
     title = soup.find_all("span", class_="item")
@@ -102,7 +120,7 @@ for link in links:
     bestPrice = 0.0
     bestPriceAmt = 0.0
     singlePrice = 0.0
-    for p in price: #Best price, per single, per no.
+    for p in price:
         v = p.text
         if "$" in v:
             priceSplit = v.split(" ")
@@ -145,8 +163,8 @@ for link in links:
     data[d][1] = str(bestPriceAmt)
     data[d][2] = "$" + str(singlePrice)
     data[d][3] = prodTitle.text
-    data[d][4] = link[1]
-    data[d][5] = link[2]
+    data[d][4] = link[0]
+    data[d][5] = link[1]
     for t in title:
         p = t.text
         rawTitles.append(p)
