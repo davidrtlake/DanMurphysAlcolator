@@ -10,7 +10,14 @@ options.add_argument('--headless')
 driver = webdriver.Chrome(r"C:\Users\david\Documents\Personal\Projects\chromedriver.exe")
 driver.get("https://www.danmurphys.com.au/search?searchTerm=*&size=30&sort=Name")
 
-time.sleep(6.5)
+def IsNumber(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+time.sleep(7)
 
 more_buttons = driver.find_elements_by_class_name("show-more")
 for x in range(len(more_buttons)):
@@ -22,120 +29,142 @@ page_source = driver.page_source
 soup = BeautifulSoup(page_source, 'lxml')
 
 categories = soup.find_all("div", class_="accordion-item")
+cats = []
+delCats = []
 for cat in categories:
-    for c in cat:
-        v = c.text.split("\n")
-        print(v)
-        for vee in v:
-            print("%%%%%%%%%%")
-            print(vee)
-            if "Category" not in vee:
-                del v[v.index(vee)]
-                print("DELETED ^^")
-print(v)
+    cats.append(cat.text)
+for c in cats:
+    if "Category" not in c:
+        delCats.append(cats.index(c))
+cnt = 0
+for num in delCats:
+    del cats[num - cnt]
+    cnt += 1
     
-def IsNumber(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
+allcats = cats[0]
+allcats = allcats.replace('(', ',').replace(')', ',').replace('Category', ',').replace('Show less\n', ',')
+cats = allcats.split(",")
+delCats = []
+cnt = 0
+for c in cats:
+    if c.replace(" ", "").isalpha() == False:
+        delCats.append(cnt)
+    if len(c) > 0 and c[-1] == " ":
+        d = c[0:-1].replace(" ", "-")
+        cats[cnt] = d.lower()
+    cnt += 1
+cnt = 0
+for num in delCats:
+    del cats[num - cnt]
+    cnt += 1
 
 links = []
-titles = ["Best Price", "Per Amount", "Single Price", "Product Name"]
+titles = ["Best Price", "Per Amount", "Single Price", "Product Name", "Link", "Category"]
 rawTitles = []
 priceTexts = []
 numberDict = {"one": 1.0, "two": 2.0, "three": 3.0, "four": 4.0, "five": 5.0,
                "six": 6.0, "seven": 7.0, "eight": 8.0, "nine": 9.0, "ten": 10.0}
+for cat in cats
+    driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=1&size=250&sort=Name")
+    pcount = 0
+    pagecount = driver.find_elements_by_class_name("page-count")
+    for pag in pagecount:
+        page = pag.text
+        pagecnt = page.split(" ")
+        for p in pagecnt:
+            if IsNumber(p):
+                pcount = int(p)
+    for p in range(1, pcount+1):
+        driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=" + p + "&size=250&sort=Name")
+        time.sleep(7)
+        block = driver.find_element_by_class_name("col-xs-12")
+        URL = block.find_elements_by_tag_name("a[href*=product")
+        for u in URL:
+            v = u.get_attribute('href')
+            if v not in links:
+                links.append([str(v), cat])
 
-
-count = 0
-URL = driver.find_elements_by_tag_name("a[href*=product")
-for u in URL:
-    v = u.get_attribute('href')
-    if v not in links and count < 30:
-        count += 1
-        links.append(v)
-
-data = [["","","",""] for j in range(len(links))]
+data = [["","","","","",""] for j in range(len(links))]
 
 c = 0
 d = 0
-##for link in links:
-##    driver.get(str(link))
+for link in links:
+    driver.get(link[1])
     #driver.get("https://www.danmurphys.com.au/product/DM_519443/100-tequila-blood-orange-bitters-bottles-275ml")
-##time.sleep(1)
-##page_source = driver.page_source
-##soup = BeautifulSoup(page_source, 'lxml')
-##title = soup.find_all("span", class_="item")
-##value = soup.find_all("span", class_="item_value")
-##price = soup.find_all("p", class_="ng-star-inserted")
-##prodTitle = soup.find("span", class_="product-name")
-##print(d+1, prodTitle.text)
-##bestPrice = 0.0
-##bestPriceAmt = 0.0
-##singlePrice = 0.0
-##for p in price: #Best price, per single, per no.
-##    v = p.text
-##    if "$" in v:
-##        priceSplit = v.split(" ")
-##        for word in priceSplit:
-##            if IsNumber(word):
-##                priceSplit[priceSplit.index(word)] = float(word)
-##            for x in numberDict:
-##                if word == x:
-##                    priceSplit[priceSplit.index(word)] = numberDict[x]       
-##        priceTexts.append(priceSplit)
-##for price in priceTexts:
-##    actualPrice = 0.0
-##    priceAmount = 0.0
-##    package = False
-##    tmpbP = 0.0
-##    tmpbPA = 0.0
-##    tmpsP = 0.0
-##    for pr in price:
-##        if IsNumber(pr) == False and "$" in pr:
-##            newpr = pr.replace("$", "")
-##            actualPrice = float(newpr)
-##            priceTexts[priceTexts.index(price)][price.index(pr)] = float(newpr)
-##        elif IsNumber(pr) == True:
-##            priceAmount = int(pr)
-##            package = True
-##    if "per" in price and package == True:
-##        tmpbP = actualPrice/priceAmount
-##        tmpbPA = priceAmount
-##    elif ("in" in price and package == True) or package == False:
-##        tmpsP = actualPrice
-##    if (tmpbP < bestPrice and tmpbP > 0.0) or bestPrice == 0.0:
-##        bestPrice = tmpbP
-##        bestPriceAmt = tmpbPA
-##    if (tmpsP < singlePrice and tmpsP > 0.0) or singlePrice == 0.0:
-##        singlePrice = tmpsP
-##    if singlePrice < bestPrice and singlePrice > 0.0 or bestPrice == 0.0:
-##        bestPrice = singlePrice
-##        bestPriceAmt = 1
-##data[d][0] = "$" + str(bestPrice)
-##data[d][1] = str(bestPriceAmt)
-##data[d][2] = "$" + str(singlePrice)
-##data[d][3] = prodTitle.text
-##for t in title:
-##    p = t.text
-##    rawTitles.append(p)
-##    if p not in titles:
-##        titles.append(p)
-##        for n in data:
-##            n.append("")
-##for v in value:
-##    data[d][titles.index(rawTitles[c])] = v.text
-##    c += 1
-##if data[d][titles.index('Alcohol Volume')] == '' \
-##           or data[d][titles.index('Alcohol Volume')] == '0':
-##    del data[d]
-##    d -= 1
-##d += 1
+    time.sleep(2)
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, 'lxml')
+    title = soup.find_all("span", class_="item")
+    value = soup.find_all("span", class_="item_value")
+    price = soup.find_all("p", class_="ng-star-inserted")
+    prodTitle = soup.find("span", class_="product-name")
+    print(d+1, prodTitle.text)
+    bestPrice = 0.0
+    bestPriceAmt = 0.0
+    singlePrice = 0.0
+    for p in price: #Best price, per single, per no.
+        v = p.text
+        if "$" in v:
+            priceSplit = v.split(" ")
+            for word in priceSplit:
+                if IsNumber(word):
+                    priceSplit[priceSplit.index(word)] = float(word)
+                for x in numberDict:
+                    if word == x:
+                        priceSplit[priceSplit.index(word)] = numberDict[x]       
+            priceTexts.append(priceSplit)
+    for price in priceTexts:
+        actualPrice = 0.0
+        priceAmount = 0.0
+        package = False
+        tmpbP = 0.0
+        tmpbPA = 0.0
+        tmpsP = 0.0
+        for pr in price:
+            if IsNumber(pr) == False and "$" in pr:
+                newpr = pr.replace("$", "")
+                actualPrice = float(newpr)
+                priceTexts[priceTexts.index(price)][price.index(pr)] = float(newpr)
+            elif IsNumber(pr) == True:
+                priceAmount = int(pr)
+                package = True
+        if "per" in price and package == True:
+            tmpbP = actualPrice/priceAmount
+            tmpbPA = priceAmount
+        elif ("in" in price and package == True) or package == False:
+            tmpsP = actualPrice
+        if (tmpbP < bestPrice and tmpbP > 0.0) or bestPrice == 0.0:
+            bestPrice = tmpbP
+            bestPriceAmt = tmpbPA
+        if (tmpsP < singlePrice and tmpsP > 0.0) or singlePrice == 0.0:
+            singlePrice = tmpsP
+        if singlePrice < bestPrice and singlePrice > 0.0 or bestPrice == 0.0:
+            bestPrice = singlePrice
+            bestPriceAmt = 1
+    data[d][0] = "$" + str(bestPrice)
+    data[d][1] = str(bestPriceAmt)
+    data[d][2] = "$" + str(singlePrice)
+    data[d][3] = prodTitle.text
+    data[d][4] = link[1]
+    data[d][5] = link[2]
+    for t in title:
+        p = t.text
+        rawTitles.append(p)
+        if p not in titles:
+            titles.append(p)
+            for n in data:
+                n.append("")
+    for v in value:
+        data[d][titles.index(rawTitles[c])] = v.text
+        c += 1
+    if data[d][titles.index('Alcohol Volume')] == '' \
+               or data[d][titles.index('Alcohol Volume')] == '0':
+        del data[d]
+        d -= 1
+    d += 1
 
-##with open('output.csv', 'w', newline='') as file:
-##    writer = csv.writer(file)
-##    writer.writerow(titles)
-##    for a in data:
-##        writer.writerow(a)
+with open('output.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(titles)
+    for a in data:
+        writer.writerow(a)
