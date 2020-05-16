@@ -8,7 +8,7 @@ options.add_argument('--ignore-certificate-errors')
 options.add_argument('--incognito')
 options.add_argument('--headless')
 driver = webdriver.Chrome(r"C:\Users\david\Documents\Personal\Projects\chromedriver.exe")
-driver.get("https://www.danmurphys.com.au/search?searchTerm=*&size=30&sort=Name")
+driver.get("https://www.danmurphys.com.au/search?searchTerm=*&size=1&sort=Name")
 
 def IsNumber(s):
     try:
@@ -19,11 +19,12 @@ def IsNumber(s):
 
 def CheckError(driver):
     for e in driver.find_elements_by_class_name("header-help-text"):
-        if e.text == "Sorry, An unexpected error occured. Please, try again later.":
+        if e.text == "Sorry, An unexpected error occured. Please, try again later." or \
+           "Sorry, 0 results found for *":
             return True
     return False
 
-time.sleep(10)
+time.sleep(5)
 
 more_buttons = driver.find_elements_by_class_name("show-more")
 for x in range(len(more_buttons)):
@@ -101,21 +102,34 @@ for cat in cats:
         driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=" + str(p) + "&size=50&sort=Name")
         block = driver.find_element_by_class_name("col-xs-12")
         URL = block.find_elements_by_tag_name("a[href*=product")
+        for u in URL:
+            try:
+                v = u.get_attribute("href")
+            except StaleElementReferenceException as Exception:
+                print('StaleElementReferenceException while getting URL, trying to find element again')
+                URL = []
+                break
+            if v not in rawLinks:
+                links.append([str(v), cat])
+                rawLinks.append(v)
+        count = 0
         while not URL:
-            if CheckError(driver):
+            if CheckError(driver) and count > 1000:
                 print("^^ ERROR LOADING PAGE ^^")
                 break
             block = driver.find_element_by_class_name("col-xs-12")
             URL = block.find_elements_by_tag_name("a[href*=product")
-        for u in URL:
-            try:
-                v = u.get_attribute("href")
-            except:
-                time.sleep(15)
-                v = u.get_attribute("href")
-            if v not in rawLinks:
-                links.append([str(v), cat])
-                rawLinks.append(v)
+            for u in URL:
+                try:
+                    v = u.get_attribute("href")
+                except:
+                    print('StaleElementReferenceException while getting URL, trying to find element again')
+                    URL = []
+                    break
+                if v not in rawLinks:
+                    links.append([str(v), cat])
+                    rawLinks.append(v)
+            count += 1
         print("        Number of URLS:", len(links))
         if (len(links)-linksLength) < 1:
             print("^^ NO ADDED LINKS ^^", "Category:", cat, "Page:", p)
@@ -129,13 +143,14 @@ for link in links:
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
-    time.sleep(2)
-    page_source = driver.page_source
-    soup = BeautifulSoup(page_source, 'lxml')
-    title = soup.find_all("span", class_="item")
-    value = soup.find_all("span", class_="item_value")
-    prices = soup.find_all("p", class_="ng-star-inserted")
-    prodTitle = soup.find("span", class_="product-name")
+    prices = []
+    while not prices:
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'lxml')
+        title = soup.find_all("span", class_="item")
+        value = soup.find_all("span", class_="item_value")
+        prices = soup.find_all("p", class_="ng-star-inserted")
+        prodTitle = soup.find("span", class_="product-name")
     try:
         print(prodTitle.text)
     except:
@@ -217,8 +232,8 @@ for link in links:
         d -= 1
     d += 1
 
-with open('output.csv', 'w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(titles)
-    for a in data:
-        writer.writerow(a)
+##with open('output.csv', 'w', newline='') as file:
+##    writer = csv.writer(file)
+##    writer.writerow(titles)
+##    for a in data:
+##        writer.writerow(a)
