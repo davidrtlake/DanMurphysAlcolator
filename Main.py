@@ -85,9 +85,10 @@ for cat in cats:
     print("\n" + "Scanning category:", progress, "/", len(cats))
     progress += 1
     driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + cat + ")&page=1&size=50&sort=Name")
-    time.sleep(6)
     pcount = 1
-    pagecount = driver.find_elements_by_class_name("page-count")
+    pagecount = []
+    while not pagecount:
+        pagecount = driver.find_elements_by_class_name("page-count")
     for pag in pagecount:
         page = pag.text
         pagecnt = page.split(" ")
@@ -114,7 +115,7 @@ for cat in cats:
                 rawLinks.append(v)
         count = 0
         while not URL:
-            if CheckError(driver) and count > 1000:
+            if CheckError(driver) and count > 700:
                 print("^^ ERROR LOADING PAGE ^^")
                 break
             block = driver.find_element_by_class_name("col-xs-12")
@@ -130,9 +131,9 @@ for cat in cats:
                     links.append([str(v), cat])
                     rawLinks.append(v)
             count += 1
-        print("        Number of URLS:", len(links))
+        print("        Number of URLS:", len(links), "(+" + str(len(links)-linksLength) + ")")
         if (len(links)-linksLength) < 1:
-            print("^^ NO ADDED LINKS ^^", "Category:", cat, "Page:", p)
+            print("^^ NO ADDED URLS ^^", "Category:", cat, "Page:", p)
 
 data = [["","","","","",""] for j in range(len(links))]
 
@@ -232,8 +233,8 @@ for link in links:
         d -= 1
     d += 1
 
-##with open('output.csv', 'w', newline='') as file:
-##    writer = csv.writer(file)
-##    writer.writerow(titles)
-##    for a in data:
-##        writer.writerow(a)
+with open('output.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(titles)
+    for a in data:
+        writer.writerow(a)
