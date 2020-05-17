@@ -55,10 +55,9 @@ def CheckNoPageCount(d):
             header = []
     return False
 
-def CheckOutOfStock(soup):
-    OOS = soup.find_all("div", class_="add-to-cart-btn")
+def CheckOutOfStock(OOS):
     for i in OOS:
-        if i.text == " Out of stock ":
+        if "Out of stock" in i.text:
             return True
     return False
 
@@ -81,8 +80,8 @@ def GetErrorURLS(urlCategory, p, urlSize):
     p = p*2
     urlSize = urlSize/2
     if (urlSize/2) < 1:
-        print("    PAGE SIZE TOO SMALL")
-        return
+        print("V   PAGE SIZE TOO SMALL")
+        return True
     for i in range(0, 2):
         driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + \
                    urlCategory + ")&page=" + str(p+i) + \
@@ -93,9 +92,12 @@ def GetErrorURLS(urlCategory, p, urlSize):
             URL = GetURLS(driver)
             count += 1
             if CheckError(driver) and count > ((progress*10)+100) and not URL:
-                print("    ERROR LOADING PAGE ^^")
-                GetErrorURLS(urlCategory, p, urlSize)
+                print(">>  ERROR LOADING PAGE")
+                if GetErrorURLS(urlCategory, p, urlSize):
+                    return True
                 break
+    print("<   LOADED URLS FROM ERROR")
+    return False
 
 categories = []
 while not categories:
@@ -196,7 +198,7 @@ for cat in newCats: #For each category
     while not pagecount: #Get the total page count
         pagecount = driver.find_elements_by_class_name("page-count")
         if (CheckNoPageCount(driver) or CheckError(driver)) and count > 150 and not pagecount:
-            print("    ERROR LOADING PAGECOUNT ^^")
+            print("#   ERROR LOADING PAGECOUNT")
             break
         count += 1
     for pag in pagecount:
@@ -220,15 +222,16 @@ for cat in newCats: #For each category
             URL = GetURLS(driver)
             count += 1
             if CheckError(driver) and count > ((progress*10)+100) and not URL:
-                print("^^ ERROR LOADING PAGE ^^")
-                GetErrorURLS(urlCategory, p, urlSize)
-                break
+                print(">   ERROR LOADING PAGE")
+                if GetErrorURLS(urlCategory, p, urlSize):
+                    break
         print("        Number of URLS:", len(links), "(+" + str(len(links)-linksLength) + ")")
         if (len(links)-linksLength) < 1:
-            print("    NO ADDED URLS ^^", "Category:", cat, "Page:", p)
+            print("0   NO ADDED URLS", "Category:", cat, "Page:", p)
     sCount += 1
 
-print("\n" + "URLS scrapped in", (time.time()- start), "seconds")
+URLTime = (time.time()- start)/60
+print("\n" + "URLS scrapped in", URLTime, "mintues \n")
 
 data = [["","","","","",""] for j in range(len(links))]
 
@@ -239,20 +242,18 @@ for link in links:
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
-    time.sleep(1)
-    prices = []
-    cnt = 0
-    while not prices:
+    time.sleep(0.75)
+    OOS = []
+    while not OOS:
         page_source = driver.page_source
         soup = BeautifulSoup(page_source, 'lxml')
         title = soup.find_all("span", class_="item")
         value = soup.find_all("span", class_="item_value")
         prices = soup.find_all("p", class_="ng-star-inserted")
         prodTitle = soup.find("span", class_="product-name")
-        if CheckOutOfStock(soup) and cnt > 100:
-            print("ITEM OUT OF STOCK")
-            break
-        cnt += 1
+        OOS = soup.find_all("div", class_="add-to-cart-btn")
+    if CheckOutOfStock(OOS):
+        print("ITEM OUT OF STOCK")
     try:
         print(prodTitle.text)
     except:
@@ -345,4 +346,6 @@ with open('output.csv', 'w', newline='') as file:
     writer.writerow(titles)
     for a in data:
         writer.writerow(a)
-print("\n" + "Script executed in", (time.time()- start), "seconds")
+    totalTime = (time.time()- start)/60
+    writer.writerow(["URL scraping time (mins)", str(URLTime), "Total script time (mins)", str(totalTime)])
+print("\n" + "Script executed in", totalTime, "mintues")
