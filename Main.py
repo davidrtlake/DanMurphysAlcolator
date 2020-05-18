@@ -78,26 +78,29 @@ def GetURLS(driver):
 
 def GetErrorURLS(urlCategory, p, urlSize):
     p = p*2
-    urlSize = urlSize/2
-    if (urlSize/2) < 1:
+    urlSize = math.ceil(urlSize/2)
+    if (urlSize/2) < 2:
         print("V   PAGE SIZE TOO SMALL")
-        return True
+        return
     for i in range(0, 2):
+        p = p+i
+        lLength = len(links)
+        print(str(i + 1) + "   LOADING PAGE " + str(i + 1) + " OF SPLIT")
         driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + \
-                   urlCategory + ")&page=" + str(p+i) + \
+                   urlCategory + ")&page=" + str(p) + \
                    "&size=" + str(urlSize) + "&sort=Name")
         URL = GetURLS(driver)
-        count = 0
+        count3 = 0
         while not URL:
             URL = GetURLS(driver)
-            count += 1
-            if CheckError(driver) and count > ((progress*10)+100) and not URL:
+            count3 += 1
+            if CheckError(driver) and count3 > ((progress*10)+100) and not URL:
                 print(">>  ERROR LOADING PAGE")
-                if GetErrorURLS(urlCategory, p, urlSize):
-                    return True
+                GetErrorURLS(urlCategory, p, urlSize)
                 break
-    print("<   LOADED URLS FROM ERROR")
-    return False
+        print("<" + str(i + 1) + "  LOADED", (len(links)-lLength), "URLS FROM PAGE")
+    print("<   LOADED", (len(links)-lLength), "URLS FROM ERROR")
+    return
 
 categories = []
 while not categories:
@@ -223,8 +226,8 @@ for cat in newCats: #For each category
             count += 1
             if CheckError(driver) and count > ((progress*10)+100) and not URL:
                 print(">   ERROR LOADING PAGE")
-                if GetErrorURLS(urlCategory, p, urlSize):
-                    break
+                GetErrorURLS(urlCategory, p, urlSize)
+                break
         print("        Number of URLS:", len(links), "(+" + str(len(links)-linksLength) + ")")
         if (len(links)-linksLength) < 1:
             print("0   NO ADDED URLS", "Category:", cat, "Page:", p)
@@ -242,7 +245,7 @@ for link in links:
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
-    time.sleep(0.75)
+    time.sleep(0.5)
     OOS = []
     while not OOS:
         page_source = driver.page_source
