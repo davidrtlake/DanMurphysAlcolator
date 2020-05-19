@@ -76,16 +76,20 @@ def GetURLS(driver):
             rawLinks.append(v)
     return URL
 
-def GetErrorURLS(urlCategory, p, urlSize):
+indentCounter = 2
+def GetErrorURLS(urlCategory, p, urlSize, indentCounter):
+    indentCount = indentCounter
+    indentCounter += 2
     p = p*2
     urlSize = math.ceil(urlSize/2)
+    llLength = len(links)
     if (urlSize/2) < 2:
-        print("V   PAGE SIZE TOO SMALL")
-        return
+        print("V " + (indentCount*" ") + "PAGE SIZE TOO SMALL")
+        return True
     for i in range(0, 2):
-        p = p+i
+        p += i
         lLength = len(links)
-        print(str(i + 1) + "   LOADING PAGE " + str(i + 1) + " OF SPLIT")
+        print(str(i + 1) + (indentCount*" ") + " LOADING PAGE " + str(i + 1) + " OF SPLIT")
         driver.get("https://www.danmurphys.com.au/search?searchTerm=*&filters=variety(" + \
                    urlCategory + ")&page=" + str(p) + \
                    "&size=" + str(urlSize) + "&sort=Name")
@@ -94,13 +98,14 @@ def GetErrorURLS(urlCategory, p, urlSize):
         while not URL:
             URL = GetURLS(driver)
             count3 += 1
-            if CheckError(driver) and count3 > ((progress*10)+100) and not URL:
-                print(">>  ERROR LOADING PAGE")
-                GetErrorURLS(urlCategory, p, urlSize)
+            if CheckError(driver) and count3 > ((progress*2)+100) and not URL:
+                print(">>" + (indentCount*" ") + "ERROR LOADING PAGE")
+                if GetErrorURLS(urlCategory, p, urlSize, indentCounter):
+                    return True
                 break
-        print("<" + str(i + 1) + "  LOADED", (len(links)-lLength), "URLS FROM PAGE")
-    print("<   LOADED", (len(links)-lLength), "URLS FROM ERROR")
-    return
+        print("<" + str(i + 1) + (indentCount*" ") + "LOADED", (len(links)-lLength), "URLS FROM PAGE")
+    print("< " + (indentCount*" ") + "LOADED", (len(links)-llLength), "URLS FROM ERROR")
+    return False
 
 categories = []
 while not categories:
@@ -122,6 +127,7 @@ driver.quit()
 options.add_argument('--headless')
 driver = webdriver.Chrome(driver_path, options=options)
 
+#Everything with "cat" is collecting, parsing, and sorting the categories
 cats = []
 delCats = []
 for cat in categories:
@@ -140,7 +146,8 @@ cats = allcats.split(",")
 keepCats = []
 keepNums = []
 IgnoreCategories = ["Accessories", "BarAccessories","FoodSnacks","SoftDrinks","Water",
-                    "NonAlcoholicDrinks","MineralSparklingWater","Nuts","Chips","Juice",
+                    "NonAlcoholicDrinks","PortTawny", "BrandyCognac", "IceBuckets",
+                    "MineralSparklingWater","Nuts","Chips","Juice", "Glassware",
                     "WineGlasses","BottleOpeners","PlasticCups","Chocolate","CoolerBags",
                     "BeerGlasses","StillWater","NonAlcoholicWine","WineRacks","Books",
                     "EnergyDrinks","NonAlcoholicBeer","Popcorn","PorkCrackling",
@@ -184,7 +191,7 @@ numberDict = {"one": 1.0, "two": 2.0, "three": 3.0, "four": 4.0, "five": 5.0,
                "six": 6.0, "seven": 7.0, "eight": 8.0, "nine": 9.0, "ten": 10.0}
 progress = 1
 sCount = 0
-for cat in newCats: #For each category
+for cat in newCats: #Collecting links from each category
     print("\n" + "Scanning category:", cat, progress, "/", len(newCats))
     progress += 1
     urlCategory = cat.replace(" ", "-").lower()
@@ -212,6 +219,7 @@ for cat in newCats: #For each category
                 pcount = int(p)
     progress2 = 1
     for p in range(1, pcount+1): #Iterate through all the pages
+        indentCounter = 2
         linksLength = len(links)
         print("    Scanning page:", progress2, "/", pcount)
         progress2 += 1
@@ -224,10 +232,10 @@ for cat in newCats: #For each category
         while not URL:
             URL = GetURLS(driver)
             count += 1
-            if CheckError(driver) and count > ((progress*10)+100) and not URL:
+            if CheckError(driver) and count > ((progress*5)+100) and not URL:
                 print(">   ERROR LOADING PAGE")
-                GetErrorURLS(urlCategory, p, urlSize)
-                break
+                if GetErrorURLS(urlCategory, p, urlSize, indentCounter):
+                    break
         print("        Number of URLS:", len(links), "(+" + str(len(links)-linksLength) + ")")
         if (len(links)-linksLength) < 1:
             print("0   NO ADDED URLS", "Category:", cat, "Page:", p)
@@ -241,7 +249,7 @@ data = [["","","","","",""] for j in range(len(links))]
 c = 0
 d = 0
 progress = 1
-for link in links:
+for link in links: #Collecting the data for all the collected links
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
