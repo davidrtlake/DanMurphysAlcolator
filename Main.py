@@ -346,8 +346,20 @@ for link in links: #Collecting the data for all the collected links
     for v in value:
         data[d][titles.index(rawTitles[c])] = v.text
         c += 1
-    if data[d][titles.index('Alcohol Volume')] == '' \
-               or data[d][titles.index('Alcohol Volume')] == '0':
+    if (data[d][titles.index('Alcohol Volume')] == '' and \
+       data[d][titles.index('Standard Drinks')] == '') or \
+       data[d][titles.index('Alcohol Volume')] == '0' or \
+       (IsNumber(data[d][titles.index('Alcohol Volume')]) and \
+       float(data[d][titles.index('Alcohol Volume')]) > 100.00) or \
+       data[d][titles.index('Alcohol Volume')] == 'N/A' or \
+       (data[d][titles.index('Standard Drinks')] == 'Various' and \
+       data[d][titles.index('Alcohol Volume')] == 'Various') or \
+       data[d][titles.index('Alcohol Volume')] == '0%' or \
+       data[d][titles.index('Standard Drinks')] == '0' or \
+       (data[d][titles.index('Alcohol Volume')] == '*' and \
+       data[d][titles.index('Standard Drinks')] == '*') or \
+       data[d][titles.index('Alcohol Volume')] == 'NA' or \
+       'mL' in data[d][titles.index('Alcohol Volume')]:
         del data[d]
         d -= 1
     d += 1
@@ -356,7 +368,8 @@ with open('output.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(titles)
     for a in data:
-        writer.writerow(a)
+        if not all('' == s for s in a):
+            writer.writerow(a)
     totalTime = (time.time()- start)/60
     writer.writerow(["URL scraping time (mins)", str(URLTime), "Total script time (mins)", str(totalTime)])
 print("\n" + "Script executed in", totalTime, "mintues")
