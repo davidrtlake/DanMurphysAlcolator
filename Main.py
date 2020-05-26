@@ -359,7 +359,8 @@ for link in links: #Collecting the data for all the collected links
        (data[d][titles.index('Alcohol Volume')] == '*' and \
        data[d][titles.index('Standard Drinks')] == '*') or \
        data[d][titles.index('Alcohol Volume')] == 'NA' or \
-       'mL' in data[d][titles.index('Alcohol Volume')]:
+       'mL' in data[d][titles.index('Alcohol Volume')] or \
+       data[d][titles.index('Alcohol Volume')] == 'Zero':
         del data[d]
         d -= 1
     d += 1
