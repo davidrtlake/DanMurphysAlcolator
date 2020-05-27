@@ -253,8 +253,9 @@ for link in links: #Collecting the data for all the collected links
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
-    time.sleep(0.5)
+    #time.sleep(0.5)
     OOS = []
+    startLoad = time.time()
     while not OOS:
         page_source = driver.page_source
         soup = BeautifulSoup(page_source, 'lxml')
@@ -263,6 +264,9 @@ for link in links: #Collecting the data for all the collected links
         prices = soup.find_all("p", class_="ng-star-inserted")
         prodTitle = soup.find("span", class_="product-name")
         OOS = soup.find_all("div", class_="add-to-cart-btn")
+        if (time.time()-startLoad) > 60:
+            startLoad = time.time()
+            driver.get(link[0])
     if CheckOutOfStock(OOS):
         print("ITEM OUT OF STOCK")
     try:
@@ -360,7 +364,10 @@ for link in links: #Collecting the data for all the collected links
        data[d][titles.index('Standard Drinks')] == '*') or \
        data[d][titles.index('Alcohol Volume')] == 'NA' or \
        'mL' in data[d][titles.index('Alcohol Volume')] or \
-       data[d][titles.index('Alcohol Volume')] == 'Zero':
+       (data[d][titles.index('Alcohol Volume')] == 'Zero' and \
+        data[d][titles.index('Standard Drinks')] == 'Zero') or \
+        (data[d][titles.index('Alcohol Volume')] == 'zero' and \
+        data[d][titles.index('Standard Drinks')] == 'zero'):
         del data[d]
         d -= 1
     d += 1
