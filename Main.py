@@ -18,7 +18,7 @@ options.add_argument('--ignore-certificate-errors')
 options.add_argument('--lang=en_US')
 options.add_argument(f'user-agent={userAgent}')
 #options.add_argument('--proxy-server=%s' % PROXY)
-driver_path = r"C:\Users\david\Documents\Personal\Projects\chromedriver.exe"
+driver_path = r"C:\Users\david\Documents\Personal\Projects\DanMurphysAlcolator\chromedriver.exe"
 driver = webdriver.Chrome(driver_path, options=options)
 driver.get("https://www.danmurphys.com.au/search?searchTerm=*&size=1&sort=Name")
 
@@ -245,7 +245,7 @@ URLTime = (time.time()- start)/60
 print("\n" + "URLS scrapped in", URLTime, "mintues \n")
 
 data = [["","","","","",""] for j in range(len(links))]
-
+    
 c = 0
 d = 0
 progress = 1
@@ -255,7 +255,9 @@ for link in links: #Collecting the data for all the collected links
     driver.get(link[0])
     #time.sleep(0.5)
     OOS = []
+    loadTime = time.time()
     startLoad = time.time()
+    breaker = False
     while not OOS:
         page_source = driver.page_source
         soup = BeautifulSoup(page_source, 'lxml')
@@ -264,9 +266,15 @@ for link in links: #Collecting the data for all the collected links
         prices = soup.find_all("p", class_="ng-star-inserted")
         prodTitle = soup.find("span", class_="product-name")
         OOS = soup.find_all("div", class_="add-to-cart-btn")
-        if (time.time()-startLoad) > 60:
+        if (time.time()-startLoad) > 30:
             startLoad = time.time()
             driver.get(link[0])
+        if (time.time()-loadTime) > 120:
+            loadTime = time.time()
+            breaker = True
+            break
+    if breaker:
+        continue
     if CheckOutOfStock(OOS):
         print("ITEM OUT OF STOCK")
     try:
@@ -366,8 +374,8 @@ for link in links: #Collecting the data for all the collected links
        'mL' in data[d][titles.index('Alcohol Volume')] or \
        (data[d][titles.index('Alcohol Volume')] == 'Zero' and \
         data[d][titles.index('Standard Drinks')] == 'Zero') or \
-        (data[d][titles.index('Alcohol Volume')] == 'zero' and \
-        data[d][titles.index('Standard Drinks')] == 'zero'):
+        data[d][titles.index('Alcohol Volume')] == 'zero' or \
+        data[d][titles.index('Standard Drinks')] == 'zero':
         del data[d]
         d -= 1
     d += 1
