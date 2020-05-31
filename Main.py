@@ -245,7 +245,7 @@ URLTime = (time.time()- start)/60
 print("\n" + "URLS scrapped in", URLTime, "mintues \n")
 
 data = [["","","","","",""] for j in range(len(links))]
-    
+
 c = 0
 d = 0
 progress = 1
@@ -253,7 +253,6 @@ for link in links: #Collecting the data for all the collected links
     print("Scanning item:", progress, "/", len(links))
     progress += 1
     driver.get(link[0])
-    #time.sleep(0.5)
     OOS = []
     loadTime = time.time()
     startLoad = time.time()
@@ -266,21 +265,20 @@ for link in links: #Collecting the data for all the collected links
         prices = soup.find_all("p", class_="ng-star-inserted")
         prodTitle = soup.find("span", class_="product-name")
         OOS = soup.find_all("div", class_="add-to-cart-btn")
+        if (time.time()-loadTime) > 60:
+            breaker = True
+            break
         if (time.time()-startLoad) > 30:
             startLoad = time.time()
             driver.get(link[0])
-        if (time.time()-loadTime) > 120:
-            loadTime = time.time()
-            breaker = True
-            break
     if breaker:
         continue
     if CheckOutOfStock(OOS):
-        print("ITEM OUT OF STOCK")
+        print("0   ITEM OUT OF STOCK")
     try:
-        print(prodTitle.text)
+        print("    " + prodTitle.text)
     except:
-        print("ERROR IN PRODUCT NAME")
+        print("*   ERROR IN PRODUCT NAME")
         
     try:
         bestPrice = 0.0
@@ -289,7 +287,7 @@ for link in links: #Collecting the data for all the collected links
         for p in prices:
             v = p.text
             if "$" in v:
-                v = v.replace('$', ' $').replace(',', '').replace('(', ' ').replace(')', ' ')
+                v = v.replace('$', ' $').replace(',', '').replace('(', ' ').replace(')', ' ').replace('\n', ' ')
                 priceSplit = v.split(" ")
                 for word in priceSplit:
                     if IsNumber(word):
@@ -327,7 +325,7 @@ for link in links: #Collecting the data for all the collected links
                 bestPrice = singlePrice
                 bestPriceAmt = 1
         if not prices:
-            print("ITEM OUT OF STOCK")
+            print("00  ITEM OUT OF STOCK")
             data[d][0] = "NO ITEM PRICE"
             data[d][1] = "NO ITEM PRICE"
             data[d][2] = "NO ITEM PRICE"
@@ -336,7 +334,7 @@ for link in links: #Collecting the data for all the collected links
             data[d][1] = str(bestPriceAmt)
             data[d][2] = "$" + str(singlePrice)
     except:
-        print("ERROR IN PRICE")
+        print("$   ERROR IN PRICE")
         data[d][0] = "ERROR IN PRICE"
         data[d][1] = "ERROR IN PRICE"
         data[d][2] = "ERROR IN PRICE"
@@ -344,7 +342,7 @@ for link in links: #Collecting the data for all the collected links
     try:
         data[d][3] = prodTitle.text
     except:
-        data[d][3] = "ERROR IN PRODUCT NAME"
+        data[d][3] = "**  ERROR IN PRODUCT NAME"
     data[d][4] = link[0]
     data[d][5] = link[1]
     
