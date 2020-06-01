@@ -266,9 +266,15 @@ for link in links: #Collecting the data for all the collected links
         prodTitle = soup.find("span", class_="product-name")
         OOS = soup.find_all("div", class_="add-to-cart-btn")
         if (time.time()-loadTime) > 60:
+            statusTest = requests.get("https://www.danmurphys.com.au")
+            if statusTest.status_code == 403:
+                print("XXXX THEY GOT US BOYS XXXX")
+                driver.quit()
+            print("+   PAGE TIMED OUT")
             breaker = True
             break
         if (time.time()-startLoad) > 30:
+            print("⟳   REFRESHING PAGE")
             startLoad = time.time()
             driver.get(link[0])
     if breaker:
@@ -387,3 +393,4 @@ with open('output.csv', 'w', newline='') as file:
     totalTime = (time.time()- start)/60
     writer.writerow(["URL scraping time (mins)", str(URLTime), "Total script time (mins)", str(totalTime)])
 print("\n" + "Script executed in", totalTime, "mintues")
+driver.quit()
