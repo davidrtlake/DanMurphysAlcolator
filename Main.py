@@ -18,7 +18,7 @@ options.add_argument('--ignore-certificate-errors')
 options.add_argument('--lang=en_US')
 options.add_argument(f'user-agent={userAgent}')
 #options.add_argument('--proxy-server=%s' % PROXY)
-driver_path = r"C:\Users\david\Documents\Personal\Projects\DanMurphysAlcolator\chromedriver.exe"
+driver_path = r"C:\Users\david\Documents\Personal\Projects\chromedriver.exe"
 driver = webdriver.Chrome(driver_path, options=options)
 driver.get("https://www.danmurphys.com.au/search?searchTerm=*&size=1&sort=Name")
 
@@ -254,6 +254,7 @@ for link in links: #Collecting the data for all the collected links
     progress += 1
     driver.get(link[0])
     OOS = []
+    priceTexts = []
     loadTime = time.time()
     startLoad = time.time()
     breaker = False
@@ -293,7 +294,15 @@ for link in links: #Collecting the data for all the collected links
         for p in prices:
             v = p.text
             if "$" in v:
-                v = v.replace('$', ' $').replace(',', '').replace('(', ' ').replace(')', ' ').replace('\n', ' ')
+                v = v.replace('$', ' $').replace(',', '').replace('(', ' ') \
+                    .replace(')', ' ').replace('\n', ' ').replace(';', ' ') \
+                    .replace('-', ' ').replace('+', ' ').replace('`', ' ') \
+                    .replace('~', ' ').replace('_', ' ').replace('=', ' ') \
+                    .replace('<', ' ').replace('>', ' ').replace('/', ' ') \
+                    .replace('?', ' ').replace('|', ' ').replace('\\', ' ') \
+                    .replace(']', ' ').replace('{', ' ').replace('}', ' ') \
+                    .replace('[', ' ').replace(':', ' ').replace('"', ' ') \
+                    .replace('\'', ' ')
                 priceSplit = v.split(" ")
                 for word in priceSplit:
                     if IsNumber(word):
@@ -318,7 +327,7 @@ for link in links: #Collecting the data for all the collected links
                     priceAmount = int(pr)
                     package = True
             if "per" in price and package == True:
-                tmpbP = actualPrice/priceAmount
+                tmpbP = round(actualPrice/priceAmount, 2)
                 tmpbPA = priceAmount
             elif ("in" in price and package == True) or package == False:
                 tmpsP = actualPrice
@@ -330,15 +339,22 @@ for link in links: #Collecting the data for all the collected links
             if singlePrice < bestPrice and singlePrice > 0.0 or bestPrice == 0.0:
                 bestPrice = singlePrice
                 bestPriceAmt = 1
-        if not prices:
-            print("00  ITEM OUT OF STOCK")
+        if not prices or (bestPrice + bestPriceAmt + singlePrice == 0.0):
+            print("X   NO ITEM PRICE")
             data[d][0] = "NO ITEM PRICE"
             data[d][1] = "NO ITEM PRICE"
             data[d][2] = "NO ITEM PRICE"
         else:
+            print("bestPrice:", "$" + str(bestPrice))
+            print("bestPriceAmt:", str(bestPriceAmt))
+            print("singlePrice:", "$" + str(singlePrice))
             data[d][0] = "$" + str(bestPrice)
             data[d][1] = str(bestPriceAmt)
-            data[d][2] = "$" + str(singlePrice)
+            if singlePrice == 0.0:
+                print("1   NO SINGLE PRICE")
+                data[d][2] = "NO SINGLE PRICE"
+            else:
+                data[d][2] = "$" + str(singlePrice)
     except:
         print("$   ERROR IN PRICE")
         data[d][0] = "ERROR IN PRICE"
@@ -362,26 +378,80 @@ for link in links: #Collecting the data for all the collected links
     for v in value:
         data[d][titles.index(rawTitles[c])] = v.text
         c += 1
-    if (data[d][titles.index('Alcohol Volume')] == '' and \
-       data[d][titles.index('Standard Drinks')] == '') or \
-       data[d][titles.index('Alcohol Volume')] == '0' or \
-       (IsNumber(data[d][titles.index('Alcohol Volume')]) and \
-       float(data[d][titles.index('Alcohol Volume')]) > 100.00) or \
-       data[d][titles.index('Alcohol Volume')] == 'N/A' or \
-       (data[d][titles.index('Standard Drinks')] == 'Various' and \
-       data[d][titles.index('Alcohol Volume')] == 'Various') or \
-       data[d][titles.index('Alcohol Volume')] == '0%' or \
-       data[d][titles.index('Standard Drinks')] == '0' or \
-       (data[d][titles.index('Alcohol Volume')] == '*' and \
-       data[d][titles.index('Standard Drinks')] == '*') or \
-       data[d][titles.index('Alcohol Volume')] == 'NA' or \
-       'mL' in data[d][titles.index('Alcohol Volume')] or \
-       (data[d][titles.index('Alcohol Volume')] == 'Zero' and \
-        data[d][titles.index('Standard Drinks')] == 'Zero') or \
-        data[d][titles.index('Alcohol Volume')] == 'zero' or \
-        data[d][titles.index('Standard Drinks')] == 'zero':
-        del data[d]
-        d -= 1
+    if 'Alcohol Volume' in titles and 'Standard Drinks' in titles:
+        if (data[d][titles.index('Alcohol Volume')] == '' and \
+           data[d][titles.index('Standard Drinks')] == '') or \
+           data[d][titles.index('Alcohol Volume')] == '0' or \
+           (IsNumber(data[d][titles.index('Alcohol Volume')]) and \
+           float(data[d][titles.index('Alcohol Volume')]) > 100.00) or \
+           data[d][titles.index('Alcohol Volume')] == 'N/A' or \
+           (data[d][titles.index('Standard Drinks')] == 'Various' and \
+           data[d][titles.index('Alcohol Volume')] == 'Various') or \
+           data[d][titles.index('Alcohol Volume')] == '0%' or \
+           data[d][titles.index('Standard Drinks')] == '0' or \
+           (data[d][titles.index('Alcohol Volume')] == '*' and \
+           data[d][titles.index('Standard Drinks')] == '*') or \
+           data[d][titles.index('Alcohol Volume')] == 'NA' or \
+           'mL' in data[d][titles.index('Alcohol Volume')] or \
+           'ml' in data[d][titles.index('Alcohol Volume')] or \
+           (data[d][titles.index('Alcohol Volume')] == 'Zero' and \
+            data[d][titles.index('Standard Drinks')] == 'Zero') or \
+            data[d][titles.index('Alcohol Volume')] == 'zero' or \
+            data[d][titles.index('Standard Drinks')] == 'zero':
+            del data[d]
+            continue
+    if 'Alcohol Volume' in titles:
+        alcVol = data[d][titles.index('Alcohol Volume')]
+        cont = 0
+        numed = False
+        deler = False
+        for letter in data[d][titles.index('Alcohol Volume')]:
+            if letter == "(":
+                deler = True
+            if deler and numed:
+                alcVol = alcVol[:cont] + alcVol[cont+1:]
+                continue
+            if IsNumber(letter):
+                numed = True
+            elif letter != "." and letter != "-":
+                alcVol = alcVol[:cont] + alcVol[cont+1:]
+                continue
+            cont += 1
+        if alcVol == "":
+            data[d][titles.index('Alcohol Volume')] = "CHECK ABV"
+        else:
+            try:
+                data[d][titles.index('Alcohol Volume')] = float(alcVol)
+            except:
+                data[d][titles.index('Alcohol Volume')] = alcVol
+                print("#   COULDN'T CONVERT ABV TO FLOAT")
+        print('Alcohol Volume:', data[d][titles.index('Alcohol Volume')])
+    if 'Standard Drinks' in titles:
+        stnds = data[d][titles.index('Standard Drinks')]
+        cont = 0
+        numed = False
+        deler = False
+        for letter in data[d][titles.index('Standard Drinks')]:
+            if letter == "(":
+                deler = True
+            if deler and numed:
+                stnds = stnds[:cont] + stnds[cont+1:]
+                continue
+            if IsNumber(letter):
+                numed = True
+            elif letter != ".":
+                stnds = stnds[:cont] + stnds[cont+1:]
+                continue
+            cont += 1
+        if stnds == "" or "-" in data[d][titles.index('Standard Drinks')]:
+            data[d][titles.index('Standard Drinks')] = "CHECK SD"
+        else:
+            try:
+                data[d][titles.index('Standard Drinks')] = float(stnds)
+            except:
+                data[d][titles.index('Standard Drinks')] = stnds
+                print("#   COULDN'T CONVERT SD TO FLOAT")
+        print('Standard Drinks:', data[d][titles.index('Standard Drinks')])
     d += 1
 
 with open('output.csv', 'w', newline='') as file:
