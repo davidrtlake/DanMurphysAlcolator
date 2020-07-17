@@ -8,7 +8,7 @@ start = time.time()
 
 ua = UserAgent()
 userAgent = ua.random
-#PROXY = "111.220.90.41:40938"
+#PROXY = "203.19.92.3"
 print(userAgent)
 
 options = Options()
@@ -61,7 +61,7 @@ def CheckOutOfStock(OOS):
             return True
     return False
 
-def GetURLS(driver):
+def GetURLS(driver): #TODO: Check complexity of not in compared to sorting at end.
     block = driver.find_element_by_class_name("col-xs-12")
     URL = block.find_elements_by_tag_name("a[href*=product")
     for u in URL:
@@ -104,7 +104,7 @@ def GetErrorURLS(urlCategory, p, urlSize, indentCounter):
                     return True
                 break
         print("<" + str(i + 1) + (indentCount*" ") + "LOADED", (len(links)-lLength), "URLS FROM PAGE")
-    print("< " + (indentCount*" ") + "LOADED", (len(links)-llLength), "URLS FROM ERROR")
+    print("<<" + (indentCount*" ") + "LOADED", (len(links)-llLength), "URLS FROM ERROR")
     return False
 
 categories = []
@@ -185,7 +185,7 @@ newCats.reverse()
 links = []
 titles = ["Best Price", "Per Amount", "Single Price", "Product Name", "Link", "Category"]
 rawTitles = []
-rawLinks = []
+rawLinks = [] #Only used to check duplicates
 priceTexts = []
 numberDict = {"one": 1.0, "two": 2.0, "three": 3.0, "four": 4.0, "five": 5.0,
                "six": 6.0, "seven": 7.0, "eight": 8.0, "nine": 9.0, "ten": 10.0}
@@ -244,6 +244,9 @@ for cat in newCats: #Collecting links from each category
 URLTime = (time.time()- start)/60
 print("\n" + "URLS scrapped in", URLTime, "mintues \n")
 
+#links = [["https://www.danmurphys.com.au/product/DM_ER_1000007029_10045/lawrenny-espresso-martini-cocktail-pack",
+#          "fwfewfw"]]
+
 data = [["","","","","",""] for j in range(len(links))]
 
 c = 0
@@ -270,10 +273,16 @@ for link in links: #Collecting the data for all the collected links
             statusTest = requests.get("https://www.danmurphys.com.au")
             if statusTest.status_code == 403:
                 print("XXXX THEY GOT US BOYS XXXX")
-                driver.quit()
-            print("+   PAGE TIMED OUT")
-            breaker = True
-            break
+                while input("Enter: ") != "c":
+                    continue
+                print("⟳   REFRESHING PAGE FOR RESTART")
+                loadTime = time.time()
+                startLoad = time.time()
+                driver.get(link[0])
+            else:
+                print("+   PAGE TIMED OUT")
+                breaker = True
+                break
         if (time.time()-startLoad) > 30:
             print("⟳   REFRESHING PAGE")
             startLoad = time.time()
@@ -345,16 +354,13 @@ for link in links: #Collecting the data for all the collected links
             data[d][1] = "NO ITEM PRICE"
             data[d][2] = "NO ITEM PRICE"
         else:
-            print("bestPrice:", "$" + str(bestPrice))
-            print("bestPriceAmt:", str(bestPriceAmt))
-            print("singlePrice:", "$" + str(singlePrice))
-            data[d][0] = "$" + str(bestPrice)
-            data[d][1] = str(bestPriceAmt)
+            data[d][0] = bestPrice
+            data[d][1] = bestPriceAmt
             if singlePrice == 0.0:
                 print("1   NO SINGLE PRICE")
                 data[d][2] = "NO SINGLE PRICE"
             else:
-                data[d][2] = "$" + str(singlePrice)
+                data[d][2] = singlePrice
     except:
         print("$   ERROR IN PRICE")
         data[d][0] = "ERROR IN PRICE"
@@ -425,7 +431,6 @@ for link in links: #Collecting the data for all the collected links
             except:
                 data[d][titles.index('Alcohol Volume')] = alcVol
                 print("#   COULDN'T CONVERT ABV TO FLOAT")
-        print('Alcohol Volume:', data[d][titles.index('Alcohol Volume')])
     if 'Standard Drinks' in titles:
         stnds = data[d][titles.index('Standard Drinks')]
         cont = 0
@@ -451,15 +456,68 @@ for link in links: #Collecting the data for all the collected links
             except:
                 data[d][titles.index('Standard Drinks')] = stnds
                 print("#   COULDN'T CONVERT SD TO FLOAT")
-        print('Standard Drinks:', data[d][titles.index('Standard Drinks')])
+    if 'Size' in titles:
+        size = data[d][titles.index('Size')]
+        cont = 0
+        delete = True
+        for letter in data[d][titles.index('Size')]:
+            if "x" not in data[d][titles.index('Size')].lower():
+                delete = False
+            if delete:
+                size = size[:cont] + size[cont+1:]
+                if letter.lower == "x":
+                    delete = False
+                continue
+            if letter != "." and not IsNumber(letter):
+                size = size[:cont] + size[cont+1:]
+                continue
+            cont += 1
+        if "ml" in data[d][titles.index('Size')].lower():
+            pass
+        elif "l" in data[d][titles.index('Size')].lower():
+            try:
+                size = round(float(size)*1000, 1)
+            except:
+                pass
+        else:
+            try:
+                if float(size) < 50:
+                    size = round(float(size)*1000, 1)
+            except:
+                pass
+        if size == "":
+            data[d][titles.index('Size')] = "CHECK SIZE"
+        else:
+            try:
+                data[d][titles.index('Size')] = float(size)
+            except:
+                data[d][titles.index('Size')] = size
+                print("#   COULDN'T CONVERT SIZE TO FLOAT")
+        print(data[d][titles.index('Size')], "mL")
     d += 1
+
+def ValConvert(val):
+  if type(val).__name__ == 'unicode':
+    return val.encode('utf8')
+  elif type(val).__name__ == 'str':
+    return val
+  else:
+    return str(val)
 
 with open('output.csv', 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(titles)
     for a in data:
         if not all('' == s for s in a):
-            writer.writerow(a)
+            try:
+                writer.writerow(a)
+            except:
+                print("ERROR THROWN")
+                try:
+                    writer.writerow(ValConvert(a))
+                except:
+                    print("SECOND ERROR THROWN")
+                    writer.writerow(["UnicodeEncode"])
     totalTime = (time.time()- start)/60
     writer.writerow(["URL scraping time (mins)", str(URLTime), "Total script time (mins)", str(totalTime)])
 print("\n" + "Script executed in", totalTime, "mintues")
